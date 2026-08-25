@@ -30,21 +30,9 @@ jobs:
       - name: Install Android 36 SDK
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Generate Wrapper
-        run: gradle wrapper --gradle-version 8.10.2
-
       - name: Run unit tests
-        run: ./gradlew clean testDebugUnitTest --no-daemon > build.log 2>&1 || (cat build.log && exit 1)
+        run: ./gradlew clean testDebugUnitTest --no-daemon
 
       - name: Build debug APK
-        run: ./gradlew assembleDebug --no-daemon > build.log 2>&1 || (cat build.log && exit 1)
-
-      - name: Commit build log
-        if: failure()
-        run: |
-          git config --global user.name "CI"
-          git config --global user.email "ci@example.com"
-          git add build.log
-          git commit -m "ci: upload build log"
-          git push
+        run: ./gradlew assembleDebug --no-daemon
 
