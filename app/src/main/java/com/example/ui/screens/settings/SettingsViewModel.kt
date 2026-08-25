@@ -29,8 +29,6 @@ class SettingsViewModel : ViewModel() {
             try {
                 val json = withContext(Dispatchers.IO) {
                     val root = JSONObject()
-
-                    // 1. Members
                     val membersArr = JSONArray()
                     memberRepository.getAllMembersDirect().forEach {
                         val m = JSONObject()
@@ -51,7 +49,6 @@ class SettingsViewModel : ViewModel() {
                     }
                     root.put("members", membersArr)
 
-                    // 2. Attendance
                     val attendanceArr = JSONArray()
                     attendanceRepository.getAllAttendanceDirect().forEach {
                         val a = JSONObject()
@@ -63,7 +60,6 @@ class SettingsViewModel : ViewModel() {
                     }
                     root.put("attendance", attendanceArr)
 
-                    // 3. Renewals
                     val renewalsArr = JSONArray()
                     renewalRepository.getAllRenewalsDirect().forEach {
                         val r = JSONObject()
@@ -76,7 +72,6 @@ class SettingsViewModel : ViewModel() {
                     }
                     root.put("renewals", renewalsArr)
 
-                    // 4. Plans
                     val plansArr = JSONArray()
                     planRepository.getAllPlansDirect().forEach {
                         val p = JSONObject()
@@ -84,21 +79,20 @@ class SettingsViewModel : ViewModel() {
                         p.put("name", it.name)
                         p.put("price", it.price)
                         p.put("durationMonths", it.durationMonths)
+                        p.put("description", it.description)
+                        p.put("benefits", it.benefits)
                         plansArr.put(p)
                     }
                     root.put("plans", plansArr)
-
+                    root.put("schemaVersion", 1)
                     root.toString(2)
                 }
 
-                // Copy to Clipboard
                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                val clip = ClipData.newPlainText("GymPro Backup", json)
-                clipboard.setPrimaryClip(clip)
+                clipboard.setPrimaryClip(ClipData.newPlainText("GymPro Backup", json))
 
-                // Share Intent
                 val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
+                    type = "application/json"
                     putExtra(Intent.EXTRA_SUBJECT, "GymPro Database Backup")
                     putExtra(Intent.EXTRA_TEXT, json)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -107,7 +101,7 @@ class SettingsViewModel : ViewModel() {
                 chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(chooser)
 
-                onComplete("Backup copied to clipboard & share options opened!")
+                onComplete("Backup copied to clipboard and share options opened.")
             } catch (e: Exception) {
                 onComplete("Export failed: ${e.message}")
             }
@@ -119,11 +113,12 @@ class SettingsViewModel : ViewModel() {
             try {
                 withContext(Dispatchers.IO) {
                     val root = JSONObject(jsonString)
+                    require(root.optInt("schemaVersion", 1) == 1) {
+                        "Unsupported backup schema version"
+                    }
 
-                    // Parse members
                     val membersList = mutableListOf<MemberEntity>()
-                    if (root.has("members")) {
-                        val arr = root.getJSONArray("members")
+                    root.optJSONArray("members")?.let { arr ->
                         for (i in 0 until arr.length()) {
                             val o = arr.getJSONObject(i)
                             membersList.add(
@@ -147,10 +142,8 @@ class SettingsViewModel : ViewModel() {
                         }
                     }
 
-                    // Parse attendance
                     val attendanceList = mutableListOf<AttendanceEntity>()
-                    if (root.has("attendance")) {
-                        val arr = root.getJSONArray("attendance")
+                    root.optJSONArray("attendance")?.let { arr ->
                         for (i in 0 until arr.length()) {
                             val o = arr.getJSONObject(i)
                             attendanceList.add(
@@ -164,10 +157,8 @@ class SettingsViewModel : ViewModel() {
                         }
                     }
 
-                    // Parse renewals
                     val renewalsList = mutableListOf<RenewalEntity>()
-                    if (root.has("renewals")) {
-                        val arr = root.getJSONArray("renewals")
+                    root.optJSONArray("renewals")?.let { arr ->
                         for (i in 0 until arr.length()) {
                             val o = arr.getJSONObject(i)
                             renewalsList.add(
@@ -182,10 +173,8 @@ class SettingsViewModel : ViewModel() {
                         }
                     }
 
-                    // Parse plans
                     val plansList = mutableListOf<MembershipPlanEntity>()
-                    if (root.has("plans")) {
-                        val arr = root.getJSONArray("plans")
+                    root.optJSONArray("plans")?.let { arr ->
                         for (i in 0 until arr.length()) {
                             val o = arr.getJSONObject(i)
                             plansList.add(
@@ -201,7 +190,6 @@ class SettingsViewModel : ViewModel() {
                         }
                     }
 
-                    // Reset and import all in a single, safe transaction to prevent partial data loss or duplicate states
                     Graph.database.withTransaction {
                         memberRepository.deleteAll()
                         attendanceRepository.deleteAll()
@@ -223,13 +211,19 @@ class SettingsViewModel : ViewModel() {
 
     fun clearAllData(onComplete: () -> Unit) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                memberRepository.deleteAll()
-                attendanceRepository.deleteAll()
-                renewalRepository.deleteAll()
-                planRepository.deleteAll()
+            try {
+                withContext(Dispatchers.IO) {
+                    Graph.database.withTransaction {
+                        memberRepository.deleteAll()
+                        attendanceRepository.deleteAll()
+                        renewalRepository.deleteAll()
+                        planRepository.deleteAll()
+                    }
+                }
+                onComplete()
+            } catch (_: Exception) {
+                onComplete()
             }
-            onComplete()
         }
     }
 }
