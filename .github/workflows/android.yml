@@ -37,12 +37,10 @@ jobs:
 
       - name: Check Status and Upload
         run: |
-          if grep -q "BUILD FAILED" build.log; then
-            git config --global user.name "CI"
-            git config --global user.email "ci@example.com"
-            git add build.log
-            git commit -m "ci: upload build log"
-            git push
-            exit 1
-          fi
+          git config --global user.name "CI"
+          git config --global user.email "ci@example.com"
+          git add build.log || true
+          git commit -m "ci: upload build log" || true
+          git push || true
+          exit 1
 
