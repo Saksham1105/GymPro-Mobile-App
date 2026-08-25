@@ -27,20 +27,9 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Android 36 SDK
-        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - name: Run unit tests
+        run: ./gradlew clean testDebugUnitTest --no-daemon
 
-      - name: Run CI and Capture Log
-        run: |
-          ./gradlew clean testDebugUnitTest --no-daemon > build.log 2>&1 || true
-          ./gradlew assembleDebug --no-daemon >> build.log 2>&1 || true
-
-      - name: Check Status and Upload
-        run: |
-          git config --global user.name "CI"
-          git config --global user.email "ci@example.com"
-          git add build.log || true
-          git commit -m "ci: upload build log" || true
-          git push || true
-          exit 1
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --no-daemon
 
