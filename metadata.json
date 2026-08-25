@@ -1,0 +1,6 @@
+{
+  "name": "GymPro",
+  "description": "Offline Gym Management and Daily Attendance tracker application.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
