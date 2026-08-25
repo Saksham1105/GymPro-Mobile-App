@@ -1,75 +1,44 @@
-# GymPro Mobile App
+# GymPro
 
-GymPro is a local-first Android application for small gyms and fitness centers. It is designed to manage members, membership plans, attendance, renewals, and portable local backups without requiring a backend service.
+A local-first, privacy-focused Android application for tracking gym members, attendances, and membership plans.
 
 ## Features
 
 - Member management
-- Membership plans and expiry tracking
-- Daily attendance
-- Renewal history
-- Local Room database storage
-- JSON export/import for explicit backups
-- Material 3 Compose UI
-- Offline-first operation
+- Attendance tracking
+- Membership plans
+- Renewals
+- Dashboard
+- Local/offline data
+- Backup/restore
 
 ## Architecture
 
-GymPro uses Jetpack Compose for the UI, ViewModels for presentation state, repositories for data access, and Room for local persistence.
-
-```text
-Compose UI
-   ↓
+Compose
+↓
 ViewModels
-   ↓
+↓
 Repositories
-   ↓
-Room / SQLite
-```
+↓
+Room
+↓
+SQLite
 
-The current implementation is intentionally local-first. No cloud database is required for normal operation.
+## Technical Details
 
-## Build
+- **Offline/local-first behavior:** All data is stored locally on the device using Room/SQLite. The application does not require an internet connection and there is no cloud synchronization.
+- **Data ownership & Privacy:** You own your data. Personal member information stays entirely on your device.
+- **Backup format:** Backups are exported as plaintext JSON files, which can be stored securely or transferred manually. **Note: These backups are not encrypted by default.**
+- **Build requirements:** JDK 17, Android SDK 36.
+- **Development setup:** Open in Android Studio or use `./gradlew` to build.
+- **Testing:** Standard Android testing frameworks. No instrumentation tests are provided out of the box yet.
+- **Release signing:** Release APKs must be signed using environment variables (`KEYSTORE_PATH`, `STORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`).
 
-Open the project in Android Studio and use the project's Gradle tooling to build the `app` module.
+## Limitations
 
-Requirements:
-
-- Android Studio with Android Gradle Plugin 9.x support
-- JDK 11
-- Android SDK 36
-
-The debug build uses Android's standard debug signing unless you provide a release keystore through environment variables.
-
-## Release signing
-
-Do not commit signing keys or passwords.
-
-Set these environment variables when producing a signed release build:
-
-```text
-KEYSTORE_PATH
-STORE_PASSWORD
-KEY_ALIAS
-KEY_PASSWORD
-```
-
-The release configuration is intentionally unsigned when `KEYSTORE_PATH` is not provided so a public clone does not depend on a private keystore.
-
-## Data and privacy
-
-GymPro stores member and gym-management records locally on the device. Automatic Android backup and device-transfer extraction are disabled for application data. Use GymPro's explicit export/import workflow when you need to move or back up records.
-
-The current export format is portable JSON. It is not encrypted, so exported backup files should be handled as sensitive data and stored securely.
-
-## Database migrations
-
-The current database configuration uses destructive fallback migration while the schema is still evolving. Before a production release with established user data, explicit Room migrations should replace destructive fallback migration.
-
-## Testing
-
-The repository contains unit-test and Robolectric test infrastructure. Generated Android Studio sample tests have been removed from the public source tree so tests can focus on GymPro behavior rather than template assertions.
+- The database migrations currently use a destructive fallback mechanism in development. Production usage should ensure proper Room migrations are written to avoid accidental data loss.
+- There is no cloud backend, authentication, or automated offsite synchronization.
 
 ## License
 
-GymPro is released under the MIT License. See [LICENSE](LICENSE).
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
